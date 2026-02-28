@@ -24,6 +24,9 @@ env/
 *.suo
 *.user
 
+# Claude Code local settings
+.claude/
+
 # Windows
 Thumbs.db
 Desktop.ini
