@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KeepAwake — Sleep Prevention for Windows</title>
+  <meta name="description" content="Lightweight Windows utility that prevents sleep, screen lock, and screensavers with smart human-like simulation and system tray support." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --border: #30363d;
+      --accent: #2f81f7;
+      --accent-hover: #58a6ff;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --green: #3fb950;
+      --orange: #d29922;
+      --radius: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent-hover); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 17, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+    }
+    .nav-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-logo span { color: var(--accent-hover); }
+    .nav-links { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--text-muted); }
+    .nav-links a { color: var(--text-muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 5rem 2rem 4rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(47, 129, 247, 0.15);
+      border: 1px solid rgba(47, 129, 247, 0.3);
+      color: var(--accent-hover);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 em { font-style: normal; color: var(--accent-hover); }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 580px;
+      margin: 0 auto 2.2rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.65rem 1.4rem;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+      border: none;
+    }
+    .btn:hover { opacity: 0.85; transform: translateY(-1px); text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* ── SECTIONS ── */
+    section { padding: 4rem 2rem; max-width: 1000px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-hover);
+      margin-bottom: 0.6rem;
+    }
+    h2 {
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .section-sub {
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+
+    /* ── FEATURE GRID ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-icon { font-size: 1.6rem; margin-bottom: 0.7rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .feature-card p { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* ── INSTALL ── */
+    .steps { display: flex; flex-direction: column; gap: 1.2rem; }
+    .step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(47, 129, 247, 0.15);
+      border: 1px solid var(--accent);
+      color: var(--accent-hover);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .step-body p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      color: #cdd9e5;
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+    }
+    code { font-family: inherit; }
+
+    /* ── HOTKEYS TABLE ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    th {
+      text-align: left;
+      padding: 0.7rem 1rem;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    kbd {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 0.83rem;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    /* ── SMART AFK ── */
+    .afk-timeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 1.5rem 0;
+      font-size: 0.82rem;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .tl-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .tl-bar {
+      height: 28px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.78rem;
+      padding: 0 10px;
+      white-space: nowrap;
+    }
+    .tl-active { background: var(--green); width: 160px; }
+    .tl-afk    { background: var(--orange); width: 80px; }
+    .tl-arrow  { color: var(--text-muted); margin: 0 4px; font-size: 1rem; padding-bottom: 20px; }
+    .tl-label  { color: var(--text-muted); }
+
+    /* ── DATA SECTION ── */
+    .data-path {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      font-family: monospace;
+      font-size: 0.88rem;
+      line-height: 2;
+      color: #cdd9e5;
+    }
+    .data-path .dir  { color: var(--accent-hover); }
+    .data-path .file { color: var(--green); }
+    .data-path .comment { color: var(--text-muted); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 2.5rem 2rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .step { grid-template-columns: 28px 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">&#9679; <span>Keep</span>Awake</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="#hotkeys">Hotkeys</a>
+    <a href="#smart-afk">Smart AFK</a>
+    <a href="https://github.com/sokiicz/KeepAwake">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">Windows · Python · Free &amp; Open Source</div>
+  <h1>Keep your PC <em>awake</em>,<br>look perfectly human.</h1>
+  <p>KeepAwake prevents sleep, screen lock, and screensavers — with smart AFK simulation, scheduled hours, and a clean system tray interface.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="https://github.com/sokiicz/KeepAwake/archive/refs/heads/main.zip">
+      &#11015; Download ZIP
+    </a>
+    <a class="btn btn-outline" href="https://github.com/sokiicz/KeepAwake">
+      View on GitHub
+    </a>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">What it does</div>
+  <h2>Everything you need, nothing you don't</h2>
+  <p class="section-sub">Simple to run, powerful under the hood.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">&#128274;</div>
+      <h3>Prevents Sleep &amp; Lock</h3>
+      <p>Keeps your session alive using silent F15 keypresses by default — invisible to applications but effective at resetting the idle timer.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#129504;</div>
+      <h3>Smart AFK Simulation</h3>
+      <p>Periodically pauses activity for a random duration to mimic natural usage patterns. Prevents you appearing "always online" 24/7.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128336;</div>
+      <h3>Scheduled Hours</h3>
+      <p>Set a start and end time so prevention only runs during your working hours — automatically stops outside those hours.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128421;</div>
+      <h3>System Tray</h3>
+      <p>Runs silently in the background. Right-click the tray icon to show the window or quit. No console window, no clutter.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#9000;</div>
+      <h3>Global Hotkeys</h3>
+      <p>Toggle prevention or show/hide the window from anywhere with <kbd>Ctrl+Alt+K</kbd> and <kbd>Ctrl+Alt+H</kbd> — no need to find the window.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128293;</div>
+      <h3>Multiple Methods</h3>
+      <p>Choose your prevention technique: F15 key (silent default), F16 key, Scroll Lock, or a 1-pixel mouse nudge.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128202;</div>
+      <h3>Session Statistics</h3>
+      <p>Tracks total prevention actions and uptime per session, stored locally in a lightweight SQLite database.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#127763;</div>
+      <h3>Dark &amp; Light Theme</h3>
+      <p>Switch between a sleek dark mode and a clean light mode from within the app — no restart needed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="section-label">Get started</div>
+  <h2>Installation</h2>
+  <p class="section-sub">Up and running in under a minute.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Clone or download</h3>
+        <p>Clone the repository, or <a href="https://github.com/sokiicz/KeepAwake/archive/refs/heads/main.zip">download the ZIP</a> and extract it anywhere.</p>
+        <pre><code>git clone https://github.com/sokiicz/KeepAwake.git
+cd KeepAwake</code></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Install dependencies</h3>
+        <p>Requires Python 3.8+. Install all packages with one command:</p>
+        <pre><code>pip install customtkinter pystray pillow pynput psutil</code></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Launch</h3>
+        <p><strong>Easiest way:</strong> double-click <code>START_Fixed_KeepAwake_Pro.bat</code> — it installs dependencies and starts the app automatically.</p>
+        <p>Or run directly:</p>
+        <pre><code>pythonw keepawake_pro.py</code></pre>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.4rem;">Use <code>pythonw</code> (not <code>python</code>) to suppress the console window.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOTKEYS -->
+<section id="hotkeys">
+  <div class="section-label">Keyboard shortcuts</div>
+  <h2>Global Hotkeys</h2>
+  <p class="section-sub">Work even when the window is hidden or minimised to tray.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Hotkey</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>K</kbd></td>
+          <td>Toggle prevention on / off</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd></td>
+          <td>Show / hide the main window</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <br>
+  <div class="section-label" style="margin-top:1rem;">Prevention methods</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>F15 key <em style="color:var(--green);font-size:0.8rem;">(default)</em></td><td>Silent keypress — invisible to most apps, safe and reliable</td></tr>
+        <tr><td>F16 key</td><td>Alternative function key press</td></tr>
+        <tr><td>Scroll Lock</td><td>Toggles Scroll Lock on and off</td></tr>
+        <tr><td>Mouse nudge</td><td>Moves the mouse 1px right then 1px back</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SMART AFK -->
+<section id="smart-afk">
+  <div class="section-label">Natural behaviour</div>
+  <h2>Smart AFK Simulation</h2>
+  <p class="section-sub">Look human, not like a script.</p>
+
+  <p style="color:var(--text-muted);margin-bottom:1rem;">After 5 minutes of continuous prevention, KeepAwake may randomly pause for 30–120 seconds, simulating you stepping away from your keyboard. This prevents you appearing "always active" in monitoring tools, games, or chat applications.</p>
+
+  <div class="afk-timeline">
+    <div class="tl-block">
+      <div class="tl-bar tl-active">Active (5 min+)</div>
+      <div class="tl-label">Prevention running</div>
+    </div>
+    <div class="tl-arrow">&#8594;</div>
+    <div class="tl-block">
+      <div class="tl-bar tl-afk">AFK pause</div>
+      <div class="tl-label">30–120 s</div>
+    </div>
+    <div class="tl-arrow">&#8594;</div>
+    <div class="tl-block">
+      <div class="tl-bar tl-active">Resumes</div>
+      <div class="tl-label">Automatically</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>AFK probability</td><td>25%</td><td>Chance of triggering AFK after inactivity threshold</td></tr>
+        <tr><td>Min AFK duration</td><td>30 s</td><td>Shortest possible AFK simulation period</td></tr>
+        <tr><td>Max AFK duration</td><td>120 s</td><td>Longest possible AFK simulation period</td></tr>
+        <tr><td>Inactivity threshold</td><td>5 min</td><td>How long prevention must run before AFK can trigger</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- DATA -->
+<section>
+  <div class="section-label">Local storage</div>
+  <h2>Your data stays on your machine</h2>
+  <p class="section-sub">No telemetry, no network calls. Everything is stored locally.</p>
+  <div class="data-path">
+    <span class="dir">~/.keepawake_pro/</span><br>
+    &nbsp;&nbsp;<span class="file">config.json</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># saved settings</span><br>
+    &nbsp;&nbsp;<span class="file">statistics.db</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># session history (SQLite)</span><br>
+    &nbsp;&nbsp;<span class="dir">logs/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">keepawake_pro_*.log</span>&nbsp;<span class="comment"># timestamped log files</span>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    <a href="https://github.com/sokiicz/KeepAwake">GitHub</a> &nbsp;&middot;&nbsp;
+    MIT License &nbsp;&middot;&nbsp;
+    Built with Python &amp; CustomTkinter
+  </p>
+  <p style="margin-top:0.5rem;">Made by <a href="https://github.com/sokiicz">sokiicz</a></p>
+</footer>
+
+</body>
+</html>
